@@ -1,0 +1,22 @@
+# 运行产物
+progress.json
+progress_all.json
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Chrome 调试配置（体积大，含登录态，绝不可提交）
+.chrome-profile/
+ykt-chrome-profile/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
