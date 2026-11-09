@@ -124,7 +124,7 @@ JS_URL = 'location.href'
 # --- 课程列表 ---
 JS_COURSES = r"""
 JSON.stringify((function(){
-  var CODE_RE = '%s';
+  var CODE_RE = '__CODE_RE__';
   var all = [];
   document.querySelectorAll('div').forEach(function(d){
     var t = d.innerText || '';
@@ -150,7 +150,7 @@ JSON.stringify((function(){
 
 JS_CLICK_COURSE = r"""
 (function(idx){
-  var CODE_RE = '%s';
+  var CODE_RE = '__CODE_RE__';
   var all = [];
   document.querySelectorAll('div').forEach(function(d){
     var t = d.innerText || '';
@@ -168,13 +168,13 @@ JS_CLICK_COURSE = r"""
   el.scrollIntoView({block:'center'});
   el.click();
   return 'CLICKED:' + (lines[0] || '?');
-})(%d)
+})(__IDX__)
 """
 
 # --- 课程页：课程名 ---
 JS_COURSE_NAME = r"""
 (function(){
-  var CODE_RE = '%s';
+  var CODE_RE = '__CODE_RE__';
   var cands = [];
   document.querySelectorAll('.title-inner-wrapper').forEach(function(e){
     var t = (e.textContent || '').trim();
@@ -350,7 +350,7 @@ JS_PPT_GOTO = r"""
   if (n >= slides.length) return 'OUT_OF_RANGE:' + slides.length;
   slides[n].click();
   return 'GOTO:' + n + '/' + slides.length;
-})(%d)
+})(__IDX__)
 """
 
 # --- PPT 页：当前页码 ---
@@ -578,7 +578,7 @@ async def handle_course_page(cdp, ctx):
 
     if not ctx.get('course_name'):
         try:
-            nm = await cdp.ev(JS_COURSE_NAME % COURSE_CODE_JS)
+            nm = await cdp.ev(JS_COURSE_NAME.replace('__CODE_RE__', COURSE_CODE_JS))
             if nm:
                 ctx['course_name'] = nm
                 log(f'  课程: {nm}')
@@ -695,11 +695,50 @@ async def handle_course_page(cdp, ctx):
     log('  ! 页面没打开')
 
 
+async def ensure_on_index(cdp, tries=20):
+    """确保停在课程列表页（SPA 会自己弹回 studentLog，需要反复纠正）"""
+    for _ in range(tries):
+        try:
+            u = await cdp.ev(JS_URL) or ''
+        except Exception:
+            u = ''
+        if '/v2/web/index' in u:
+            raw = await cdp.ev(JS_COURSES.replace('__CODE_RE__', COURSE_CODE_JS))
+            try:
+                if json.loads(raw or '[]'):
+                    return True
+            except Exception:
+                pass
+            await asyncio.sleep(0.8)
+            continue
+        await cdp.goto(CFG['home'], '/v2/web/index')
+        await asyncio.sleep(1.5)
+    return False
+
+
+async def click_and_capture_cid(cdp, idx, wait=10.0):
+    """点课程卡片，抓住跳转瞬间 URL 里的 classroom_id"""
+    r = await cdp.ev(JS_CLICK_COURSE.replace('__CODE_RE__', COURSE_CODE_JS)
+                     .replace('__IDX__', str(idx)))
+    log('  点击:', r)
+    t0 = time.time()
+    while time.time() - t0 < wait:
+        await asyncio.sleep(0.15)
+        try:
+            u = await cdp.ev(JS_URL)
+        except Exception:
+            continue
+        m = re.search(r'/studentLog/(\d+)', u or '')
+        if m:
+            return m.group(1)
+    return None
+
+
 async def handle_index(cdp, ctx):
     """课程列表：选下一门课"""
     courses = []
     for attempt in range(15):
-        raw = await cdp.ev(JS_COURSES % COURSE_CODE_JS)
+        raw = await cdp.ev(JS_COURSES.replace('__CODE_RE__', COURSE_CODE_JS))
         try:
             courses = json.loads(raw) if raw else []
         except Exception:
@@ -709,18 +748,24 @@ async def handle_index(cdp, ctx):
         if attempt == 0:
             log('  课程列表加载中…')
         await asyncio.sleep(2)
+        # 可能被 SPA 弹回 studentLog，纠一次
+        if attempt in (4, 9):
+            try:
+                u = await cdp.ev(JS_URL) or ''
+            except Exception:
+                u = ''
+            if '/v2/web/index' not in u:
+                await ensure_on_index(cdp)
 
     if not courses:
-        log('  ! 读不到课程列表，跳过本轮')
-        await asyncio.sleep(5)
+        log('  ! 读不到课程列表，回首页重试')
+        await ensure_on_index(cdp)
+        await asyncio.sleep(3)
         return None
 
     done = ctx['progress']['courses_done']
     todo = [c for c in courses if c['name'] not in done]
     log(f'  课程 {len(courses)} 门，已完成 {len(done)} 门，待处理 {len(todo)} 门')
-
-    if ONLY_COURSE:
-        todo = [c for c in todo if c['name'] and str(c.get('idx')) is not None]
 
     if not todo:
         log('★★★ 所有课程都处理完了')
@@ -732,18 +777,38 @@ async def handle_index(cdp, ctx):
     if DRY:
         return None
 
-    r = await cdp.ev((JS_CLICK_COURSE % COURSE_CODE_JS) % target['idx'])
-    log('  点击:', r)
-    for _ in range(60):
-        await asyncio.sleep(0.6)
+    # 优先用缓存的 classroom_id 直接跳转（比点击稳定）
+    cmap = ctx['progress'].setdefault('course_map', {})
+    cid = cmap.get(target['name'])
+
+    if cid:
+        log(f'  用缓存 ID 直接跳转: {cid}')
+        await cdp.goto(course_url(cid), 'studentLog')
+        await asyncio.sleep(4)
         u = await cdp.ev(JS_URL)
         if 'studentLog' in (u or ''):
-            if 'tab=unfinished' not in (u or ''):
-                await cdp.goto(u + ('&' if '?' in u else '?') + 'tab=unfinished', 'tab=unfinished')
             log('  进入课程页')
-            await asyncio.sleep(4)
             return None
-    log('  ! 课程页没打开')
+        log('  缓存 ID 失效，改点击')
+        cid = None
+
+    if not cid:
+        if not await ensure_on_index(cdp):
+            log('  ! 回不到课程列表')
+            await asyncio.sleep(3)
+            return None
+        cid = await click_and_capture_cid(cdp, target['idx'])
+        if cid:
+            cmap[target['name']] = cid
+            save_progress(ctx['progress'])
+            log(f'  记住 course id: {cid}')
+            await cdp.goto(course_url(cid), 'studentLog')
+            await asyncio.sleep(4)
+            u = await cdp.ev(JS_URL)
+            if 'studentLog' in (u or ''):
+                log('  进入课程页')
+                return None
+        log('  ! 课程页没打开')
     return None
 
 
