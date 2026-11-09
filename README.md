@@ -10,9 +10,12 @@
 
 ### 方式一：直接下载（推荐）
 
-点这个链接，浏览器会自动下载压缩包：
+点这个链接，浏览器会自动下载**最新版**压缩包：
 
-**https://github.com/GPIO-PullUpTo-THEBEST/yuketang_autowatch/releases/latest/download/yuketang-auto-study-v1.0.zip**
+**https://github.com/GPIO-PullUpTo-THEBEST/yuketang_autowatch/archive/refs/heads/main.zip**
+
+> 这个链接永远指向最新代码，不会过期。
+> 想下带版本号的正式包：https://github.com/GPIO-PullUpTo-THEBEST/yuketang_autowatch/releases/latest
 
 下载后：
 
