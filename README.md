@@ -4,6 +4,58 @@
 
 > 需要自己作答的内容（作业、图文、讨论、各类题目）会被自动跳过，不会伪造。
 
+---
+
+## ⬇️ 一键下载安装
+
+### 方式一：直接下载（推荐）
+
+点这个链接，浏览器会自动下载压缩包：
+
+**https://github.com/GPIO-PullUpTo-THEBEST/yuketang_autowatch/releases/latest/download/yuketang-auto-study-v1.0.zip**
+
+下载后：
+
+1. 解压到任意目录（**路径不要有空格**）
+2. 双击 `install.bat`
+3. 它会自动：检查 Python → 下载依赖 → 启动 Chrome → 提示你登录 → 开始刷课
+
+### 方式二：克隆仓库
+
+```bash
+git clone https://github.com/GPIO-PullUpTo-THEBEST/yuketang_autowatch.git
+cd yuketang_autowatch
+pip install -r requirements.txt
+python run_all.py
+```
+
+### 方式三：Green Code 按钮
+
+在仓库首页点绿色 **Code** 按钮 → **Download ZIP**。
+
+---
+
+## 使用
+
+看到黑色窗口滚动这样的日志就说明在跑了：
+
+```
+[21:19:08] CDP 已连接: https://www.yuketang.cn/...
+[21:19:48]   未完成 83 项: 视频4, 作业46, 图文23, 讨论10
+[21:19:48]   下一个: [视频] 自觉学习和运用马克思主义
+[21:19:58]   倍速: HOOKED rate=2
+[21:20:28]   ★ 播完 (138s)
+```
+
+想停：
+
+- 双击 `stop.bat`
+- 或命令行 `Ctrl+C`
+
+**详细图文教程见 [新手教程.md](新手教程.md)**（含 cmd 怎么开、每一步复制粘贴什么）。
+
+---
+
 ## 特性
 
 - **三类内容全覆盖**
