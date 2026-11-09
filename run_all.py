@@ -32,6 +32,8 @@ CFG = {
 
 # 课程卡片识别正则（默认适配 "2026秋-XXX" / "2026春-XXX" 这种课序号）
 COURSE_CODE_RE = os.environ.get('YKT_COURSE_CODE_RE', r'20\d{2}[秋春]-')
+# 注入到 JS 单引号字符串时必须转义反斜杠，否则 \d 会被 JS 解析成 d
+COURSE_CODE_JS = COURSE_CODE_RE.replace('\\', '\\\\').replace("'", "\\'")
 
 args = sys.argv[1:]
 if '--rate' in args:
@@ -576,7 +578,7 @@ async def handle_course_page(cdp, ctx):
 
     if not ctx.get('course_name'):
         try:
-            nm = await cdp.ev(JS_COURSE_NAME % COURSE_CODE_RE)
+            nm = await cdp.ev(JS_COURSE_NAME % COURSE_CODE_JS)
             if nm:
                 ctx['course_name'] = nm
                 log(f'  课程: {nm}')
@@ -697,7 +699,7 @@ async def handle_index(cdp, ctx):
     """课程列表：选下一门课"""
     courses = []
     for attempt in range(15):
-        raw = await cdp.ev(JS_COURSES % COURSE_CODE_RE)
+        raw = await cdp.ev(JS_COURSES % COURSE_CODE_JS)
         try:
             courses = json.loads(raw) if raw else []
         except Exception:
@@ -730,7 +732,7 @@ async def handle_index(cdp, ctx):
     if DRY:
         return None
 
-    r = await cdp.ev((JS_CLICK_COURSE % COURSE_CODE_RE) % target['idx'])
+    r = await cdp.ev((JS_CLICK_COURSE % COURSE_CODE_JS) % target['idx'])
     log('  点击:', r)
     for _ in range(60):
         await asyncio.sleep(0.6)
