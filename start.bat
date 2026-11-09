@@ -6,6 +6,15 @@ echo ==========================================
 echo   Yuketang Auto Study
 echo ==========================================
 echo.
+echo  !!! IMPORTANT / 重要 !!!
+echo  Keep the debug Chrome window OPEN.
+echo  Do NOT minimize it.
+echo  调试用的 Chrome 窗口不能关闭，也不能最小化。
+echo  You may switch windows or leave it in background.
+echo  可以切到别的窗口，但不要点最小化。
+echo.
+echo ==========================================
+echo.
 
 set "PY="
 for /f "delims=" %%i in ('where python 2^>nul') do if not defined PY set "PY=%%i"
@@ -15,6 +24,7 @@ if not defined PY if exist "%LocalAppData%\Programs\Python\Python39\python.exe" 
 if not defined PY (
     echo [ERROR] Python not found.
     echo Install from https://www.python.org/downloads/
+    echo Remember to check "Add python.exe to PATH"
     pause
     exit /b 1
 )
@@ -68,17 +78,20 @@ if not %errorlevel%==0 (
 )
 
 echo.
-echo       If not logged in, open https://www.yuketang.cn and scan QR code
-echo       Press any key when ready
+echo       If not logged in:
+echo       open https://www.yuketang.cn and scan QR code
+echo       如果还没登录，请在弹出的 Chrome 里扫码登录
+echo       Press any key when ready / 登录好后按任意键
 pause >nul
 
 :run
 echo.
 echo [3/3] Starting...
-echo ------------------------------------------
-echo Keep the debug Chrome window OPEN
-echo Press Ctrl+C to stop
-echo ------------------------------------------
+echo --------------------------------------------------
+echo  Keep the debug Chrome OPEN and NOT MINIMIZED
+echo  调试用的 Chrome 不能关，也不能最小化
+echo  Press Ctrl+C to stop / 按 Ctrl+C 停止
+echo --------------------------------------------------
 echo.
 
 %PY% -u run_all.py
@@ -86,5 +99,6 @@ echo.
 echo.
 echo ==========================================
 echo   Finished. Progress saved in progress.json
+echo   Done. Next time just double-click start.bat
 echo ==========================================
 pause

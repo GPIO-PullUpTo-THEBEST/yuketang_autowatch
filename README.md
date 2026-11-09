@@ -1,186 +1,232 @@
-# 雨课堂自动刷课 (Yuketang Auto Study)
+# 雨课堂自动刷课
 
-通过 Chrome DevTools Protocol 自动完成雨课堂的**视频**、**PPT 课件**和**PPT 内嵌视频**，支持 2 倍速播放、跨课程自动切换、断点续刷。
+自动完成雨课堂的**视频**、**PPT 课件**、**PPT 内嵌视频**，2 倍速播放，跨课程自动切换，断点续刷。
 
-> 需要自己作答的内容（作业、图文、讨论、各类题目）会被自动跳过，不会伪造。
+作业、图文、讨论、各类题目会被自动跳过（需要你自己做）。
 
 ---
 
-## ⬇️ 一键下载安装
-
-### 方式一：直接下载（推荐）
-
-点这个链接，浏览器会自动下载**最新版**压缩包：
+## ⬇️ 下载
 
 **https://github.com/GPIO-PullUpTo-THEBEST/yuketang_autowatch/archive/refs/heads/main.zip**
 
-> 这个链接永远指向最新代码，不会过期。
-> 想下带版本号的正式包：https://github.com/GPIO-PullUpTo-THEBEST/yuketang_autowatch/releases/latest
-
-下载后：
-
-1. 解压到任意目录（**路径不要有空格**）
-2. 双击 `install.bat`
-3. 它会自动：检查 Python → 下载依赖 → 启动 Chrome → 提示你登录 → 开始刷课
-
-### 方式二：克隆仓库
-
-```bash
-git clone https://github.com/GPIO-PullUpTo-THEBEST/yuketang_autowatch.git
-cd yuketang_autowatch
-pip install -r requirements.txt
-python run_all.py
-```
-
-### 方式三：Green Code 按钮
-
-在仓库首页点绿色 **Code** 按钮 → **Download ZIP**。
+点开就自动下载，解压到任意目录（**路径不要有空格**）。
 
 ---
 
-## 使用
+## ⚠️ 三条铁律（不遵守会失败）
 
-看到黑色窗口滚动这样的日志就说明在跑了：
+### 1. 调试用的 Chrome 窗口**不能关闭**
 
-```
-[21:19:08] CDP 已连接: https://www.yuketang.cn/...
-[21:19:48]   未完成 83 项: 视频4, 作业46, 图文23, 讨论10
-[21:19:48]   下一个: [视频] 自觉学习和运用马克思主义
-[21:19:58]   倍速: HOOKED rate=2
-[21:20:28]   ★ 播完 (138s)
-```
+脚本靠这个窗口工作。关掉 = 脚本停摆。
 
-想停：
+### 2. 调试用的 Chrome 窗口**不能最小化**
 
-- 双击 `stop.bat`
-- 或命令行 `Ctrl+C`
+Chrome 会节流最小化窗口里的定时器和渲染，视频会卡住不往前走。
 
-**详细图文教程见 [新手教程.md](新手教程.md)**（含 cmd 怎么开、每一步复制粘贴什么）。
+- ✅ 可以：切到别的窗口、被别的窗口挡住、最大化、普通大小
+- ❌ 不行：点最小化按钮
+
+### 3. 可以正常用鼠标键盘
+
+脚本走浏览器调试协议，不占用你的鼠标键盘。你可以开自己的浏览器上网、看视频、打游戏，都不受影响。
 
 ---
 
-## 特性
+## 三个按钮
 
-- **三类内容全覆盖**
-  - 纯视频 → 接管 `<video>`，锁 2 倍速播放到结束
-  - PPT 课件 → 逐页翻阅并停留
-  - PPT 内嵌视频 → 自动点击播放按钮，再锁 2 倍速
-- **2 倍速不被打回**：直接改 `video.playbackRate` 会被雨课堂播放器重置为 1。本项目通过劫持该属性的 setter，使播放器的重置失效
-- **跨课程自动切换**：一门课刷完自动标记并进入下一门
-- **断点续刷**：进度存 `progress.json`，重跑不重复
-- **智能跳过**：作业 / 图文 / 讨论 / 主观题 / 单选题 / 多选题 / 判断题 / 填空题 / 计算题 / 证明题 等
-- **卡死自愈**：同一项 2 次无进展自动拉黑；同一页面连续 3 轮自动跳走
+解压后目录里只有三个 `.bat`，按顺序用：
 
-## 为什么用 CDP 而不是油猴脚本
-
-Tampermonkey 在雨课堂的 `/ai-workspace/`（视频页）和 `/v2/web/studentCards/`（PPT 页）**无法注入脚本**——播放器只响应 `isTrusted=true` 的事件，注入的 JS 全部被忽略。Chrome 调试协议走浏览器原生通道，不受此限制。
-
-## 环境要求
-
-| 项目 | 要求 |
+| 文件 | 什么时候用 |
 |---|---|
-| 系统 | Windows（使用了 `--user-data-dir` 独立配置目录；Linux/macOS 改一下启动参数即可） |
-| Chrome | 136 及以上（旧版本可直接用默认配置目录开调试端口） |
-| Python | 3.8+ |
-| 依赖 | `pip install -r requirements.txt` |
+| **`install.bat`** | **第一次**用，双击它 |
+| **`start.bat`** | 以后每次开始刷课，双击它 |
+| **`stop.bat`** | 想停下来，双击它 |
 
-> Chrome 136+ 禁止在默认配置目录开启远程调试，所以必须使用独立的 `--user-data-dir`。
+---
 
-## 快速开始
+## 第一次使用
 
-### 1. 准备
+### 第 1 步：双击 `install.bat`
 
-```bash
-pip install -r requirements.txt
-```
+它会：
+1. 找 Python（找不到会提示你去装）
+2. 自动装依赖
+3. 检查 Chrome
+4. 启动 `start.bat`
 
-### 2. 关闭所有 Chrome 窗口，然后用调试模式启动
+> 需要 Python 3.8+。没装的话去 https://www.python.org/downloads/ 下载，
+> **安装第一屏底部务必勾选 `Add python.exe to PATH`**。
 
-Windows CMD：
+### 第 2 步：Chrome 自动弹出后，登录雨课堂
 
-```bat
-"C:\Program Files\Google\Chrome\Application\chrome.exe" ^
-  --remote-debugging-port=9222 ^
-  --user-data-dir=%USERPROFILE%\ykt-chrome-profile
-```
+`start.bat` 会自动：
+1. 关掉你所有 Chrome 窗口
+2. 用调试模式启动一个新 Chrome
+3. 等你登录
 
-PowerShell：
+在新 Chrome 里打开 https://www.yuketang.cn，扫码登录（只需第一次）。
 
-```powershell
-& "C:\Program Files\Google\Chrome\Application\chrome.exe" `
-  --remote-debugging-port=9222 `
-  --user-data-dir="$env:USERPROFILE\ykt-chrome-profile"
-```
+登录好了回到黑色窗口，按任意键继续。
 
-### 3. 在打开的浏览器里登录雨课堂
+### 第 3 步：等它自己刷
 
-访问 https://www.yuketang.cn 并扫码登录。
-
-### 4. 运行
-
-```bash
-python run_all.py
-```
-
-或者直接双击 `start.bat`（Windows，会自动完成 2~4 步）。
-
-停止：双击 `stop.bat` 或 `Ctrl+C`。
-
-## 命令行参数
-
-```bash
-python run_all.py                  # 2 倍速全自动
-python run_all.py --rate 1         # 1 倍速（不劫持）
-python run_all.py --dry            # 只看不操作
-python run_all.py --course 32367036  # 仅指定课程 ID（用于调试）
-```
-
-## 环境变量
-
-| 变量 | 默认值 | 说明 |
-|---|---|---|
-| `YKT_CDP_PORT` | `9222` | Chrome 调试端口 |
-| `YKT_PROGRESS` | `./progress.json` | 进度文件路径 |
-| `YKT_RATE` | `2` | 播放倍速 |
-| `YKT_PPT_DWELL` | `4` | PPT 每页停留秒数 |
-| `YKT_COURSE_CODE_RE` | `20\d{2}[秋春]-` | 课程卡片识别正则（不同学校课序号格式可能不同） |
-
-## 工作原理
+黑色窗口滚动这样的日志就是在跑：
 
 ```
-课程列表  ──点──▶  课程页（未完成 tab）
-                      │
-                      ├─ 纯视频  ──▶ ai-workspace/.../video  ──▶ 劫持 2x ──▶ 播完
-                      ├─ PPT    ──▶ studentCards/.../ppt     ──▶ 逐页停留
-                      └─ PPT视频 ──▶ 同上 + 点 .video-box 中心 ──▶ 劫持 2x ──▶ 播完
-                      │
-                      ▼
-                  回课程页，继续下一个
-                      │
-                  没有可刷项 ──▶ 标记课程完成 ──▶ 回课程列表 ──▶ 下一门
+[23:36:50]   未完成 87 项: 图文35, 视频计分39, 讨论1, 作业12
+[23:36:50]   下一个: [视频计分] 1.2.3毛泽东思想的主要内容
+[23:36:52]   视频 839s
+[23:36:52]   倍速: HOOKED rate=2
+[23:37:12]   544/839s  rate=2
+[23:37:52]   ★ 播完 (839s)
 ```
 
-关键选择器：
+**这时候你可以去干别的，但别关也别最小化那个 Chrome。**
+
+---
+
+## 以后每次使用
+
+```
+双击 start.bat  →  等它跑
+想停双击 stop.bat
+```
+
+不用再做 `install.bat`。
+
+---
+
+## 想停下来
+
+双击 **`stop.bat`**，或者直接关掉黑色窗口。
+
+进度会自动存在 `progress.json`，下次 `start.bat` 接着刷，不会重复。
+
+---
+
+## 常见问题
+
+### 双击后闪一下就没了
+
+Python 没装或没加到 PATH。去 https://www.python.org/downloads/ 重装，勾 `Add python.exe to PATH`。
+
+装好后双击 `install.bat` 再试一次。
+
+### 提示 `[ERROR] chrome.exe not found`
+
+Chrome 装在非常规位置。用记事本打开 `start.bat`，把 `set "CHROME=..."` 那几行改成你电脑上 Chrome 的实际路径。
+
+### Chrome 窗口被我不小心最小化了
+
+最大化回去（**不要只是恢复，要点最大化按钮**），脚本会在几秒内自动恢复播放。日志里会看到它重新 `play()`。
+
+### Chrome 被我不小心关了
+
+双击 `stop.bat` 清掉残留进程，然后重新双击 `start.bat`。登录状态还在，不用重新扫码。
+
+### 一直显示"课程列表加载中"
+
+在 Chrome 里刷新一下雨课堂首页，确认是已登录状态。
+
+### 日志里出现「无进展」「拉黑跳过」
+
+正常。表示某项内容刷不动（通常是题目类），脚本会自动跳过它，继续下一项。
+
+### 日志 10 分钟没有新内容
+
+卡死了。双击 `stop.bat`，再双击 `start.bat`。
+
+### Chrome 大版本更新后突然不能用了
+
+删掉这个文件夹：
+
+```
+C:\Users\你的用户名\ykt-chrome-profile
+```
+
+然后重新双击 `start.bat`，重新扫码登录。
+
+### 想从头再刷一遍
+
+删掉 `progress.json`。
+
+### 只想重刷某一门课
+
+用记事本打开 `progress.json`，在 `courses_done` 数组里删掉那门课的名字。
+
+---
+
+## 它会做什么
+
+```
+课程列表
+   ↓
+课程页（未完成列表）
+   ├─ 纯视频 ────→ 2 倍速播完
+   ├─ PPT 课件 ──→ 逐页翻阅停留
+   └─ PPT 视频 ──→ 点播放 → 2 倍速播完
+   ↓
+没有可刷内容 → 标记本课完成 → 下一门
+   ↓
+全部完成 → 自动退出
+```
+
+**自动跳过**：作业、图文、讨论、主观题、单选题、多选题、判断题、填空题、计算题、证明题。
+
+---
+
+## 文件说明
+
+| 文件 | 作用 |
+|---|---|
+| `install.bat` | 首次安装 |
+| `start.bat` | 开始刷课 |
+| `stop.bat` | 停止 |
+| `run_all.py` | 主程序 |
+| `progress.json` | 进度记录（**别删，删了会重头刷**） |
+| `requirements.txt` | Python 依赖清单 |
+
+---
+
+## 技术原理（想了解才看）
+
+### 为什么 2 倍速能生效
+
+直接改 `video.playbackRate = 2` 会被雨课堂播放器在 2 秒内重置回 1。
+
+本项目劫持这个属性的 setter，让播放器的重置失效：
+
+```js
+var desc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'playbackRate');
+Object.defineProperty(video, 'playbackRate', {
+  get: function(){ return desc.get.call(video); },
+  set: function(){ desc.set.call(video, 2); }   // 无视外部赋值
+});
+```
+
+### 为什么必须用 Chrome 调试协议
+
+Tampermonkey 在雨课堂的视频页和 PPT 页**注入不进去**——播放器只响应 `isTrusted=true` 的真实事件，脚本 `click()` 全被忽略。
+
+试过无效的方案：`element.click()`、`dispatchEvent(MouseEvent)`、`dispatchEvent(PointerEvent)`、CDP `Input.dispatchMouseEvent`。
+
+Chrome 调试协议（CDP）走浏览器原生通道，能绕过这个限制。
+
+### 关键选择器
 
 | 元素 | 用途 |
 |---|---|
-| `li.unfinished-study__item` | 课程页里的未完成条目 |
-| `.unfinished-study__type-card` | 条目类型（课件 / 视频 / 作业 / 图文 / 讨论） |
-| `.title-inner-wrapper` | 课程名（需排除形如 `2026秋-SSE038-7` 的课序号） |
-| `.video-box` | PPT 页里的视频容器，点击其中心才会创建 `<video>` |
-| `.pptThumbsSwiper .swiper-slide` | PPT 缩略图，点击切换页 |
+| `li.unfinished-study__item` | 课程页未完成条目 |
+| `.unfinished-study__type-card` | 条目类型 |
+| `.video-box` | PPT 页的视频容器，点中心才创建 `<video>` |
+| `.pptThumbsSwiper .swiper-slide` | PPT 缩略图 |
 
-## 注意事项
-
-- **不要关闭调试实例的 Chrome 窗口**，脚本依赖它
-- 可以正常使用鼠标键盘，脚本不占用输入设备
-- 最小化窗口可以，但别关闭标签页
-- Chrome 大版本更新后如失效，删除 `--user-data-dir` 指向的目录重新登录即可
-- 删除 `progress.json` 会重新刷所有课程
+---
 
 ## 免责声明
 
-本项目仅供个人学习与技术研究使用。使用产生的一切后果由使用者自行承担，请遵守所在学校及平台的相关规定。
+仅供个人学习与技术研究使用。使用产生的一切后果由使用者自行承担，请遵守所在学校及平台的相关规定。
 
 ## License
 
