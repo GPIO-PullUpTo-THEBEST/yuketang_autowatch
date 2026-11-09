@@ -51,34 +51,72 @@ class CDP:
     def __init__(self):
         self.ws = None
         self.mid = 0
+        self.target_id = None
 
-    async def connect(self):
+    def _find_page(self):
         tabs = json.loads(urllib.request.urlopen(
             f'http://127.0.0.1:{CDP_PORT}/json/list', timeout=5).read())
-        # 优先找雨课堂标签
-        page = None
-        for x in tabs:
-            if x.get('type') == 'page' and 'yuketang' in (x.get('url') or ''):
-                page = x
-                break
+        pages = [x for x in tabs if x.get('type') == 'page']
+        if self.target_id:
+            for x in pages:
+                if x.get('id') == self.target_id:
+                    return x
+        for x in pages:
+            if 'yuketang' in (x.get('url') or ''):
+                return x
+        return pages[0] if pages else None
+
+    async def connect(self):
+        page = self._find_page()
         if not page:
-            raise RuntimeError('没有雨课堂标签页')
+            raise RuntimeError('没有可用标签页')
+        self.target_id = page.get('id')
         self.ws = await websockets.connect(page['webSocketDebuggerUrl'], max_size=32 * 1024 * 1024)
+        self.mid = 0
         await self.send('Runtime.enable')
         await self.send('Page.enable')
         log('CDP 已连接:', (page.get('url') or '')[:70])
 
-    async def send(self, method, params=None):
+    async def reconnect(self):
+        try:
+            if self.ws:
+                await self.ws.close()
+        except Exception:
+            pass
+        self.ws = None
+        for i in range(10):
+            try:
+                await self.connect()
+                log('CDP 重连成功')
+                return True
+            except Exception as e:
+                if i == 0:
+                    log('CDP 断开，尝试重连…')
+                await asyncio.sleep(2)
+        log('CDP 重连失败')
+        return False
+
+    async def send(self, method, params=None, _retry=True):
+        if self.ws is None:
+            if not await self.reconnect():
+                raise RuntimeError('CDP 不可用')
         self.mid += 1
         mid = self.mid
-        await self.ws.send(json.dumps({'id': mid, 'method': method, 'params': params or {}}))
-        while True:
-            raw = await asyncio.wait_for(self.ws.recv(), timeout=30)
-            m = json.loads(raw)
-            if m.get('id') == mid:
-                if 'error' in m:
-                    raise RuntimeError(f"{method}: {m['error']}")
-                return m.get('result', {})
+        try:
+            await self.ws.send(json.dumps({'id': mid, 'method': method, 'params': params or {}}))
+            while True:
+                raw = await asyncio.wait_for(self.ws.recv(), timeout=30)
+                m = json.loads(raw)
+                if m.get('id') == mid:
+                    if 'error' in m:
+                        raise RuntimeError(f"{method}: {m['error']}")
+                    return m.get('result', {})
+        except RuntimeError:
+            raise
+        except Exception as e:
+            if _retry and await self.reconnect():
+                return await self.send(method, params, _retry=False)
+            raise RuntimeError(f'CDP 调用失败 {method}: {e}')
 
     async def ev(self, expr, await_promise=False):
         r = await self.send('Runtime.evaluate', {
@@ -231,16 +269,16 @@ JSON.stringify((function(){
     var t = li.innerText || '';
     if (/已完成/.test(t)) return;
     var card = li.querySelector('.unfinished-study__type-card');
-    var type = card ? card.textContent.trim() : '';
+    var type = card ? card.textContent.replace(/\s+/g, '') : '';
     var lines = t.split('\n').map(function(s){return s.trim();}).filter(Boolean);
     var title = '';
     for (var k = 0; k < lines.length; k++) {
-      if (lines[k] === type) continue;
-      if (/^\d+\s*\/\s*\d+\s*[页]?$/.test(lines[k])) continue;
-      if (/截止/.test(lines[k])) continue;
-      if (/计分|未开始|未完成|进行中|已完成/.test(lines[k])) continue;
-      title = lines[k];
-      break;
+      var L = lines[k];
+      if (L === type) continue;
+      if (/^\d+\s*\/\s*\d+\s*[页]?$/.test(L)) continue;
+      if (/截止/.test(L)) continue;
+      if (/^(计分|未开始|未完成|进行中|已完成|视频|课件|图文|作业|讨论)$/.test(L)) continue;
+      if (L.length > title.length) title = L;
     }
     out.push({idx: i, type: type, title: title || '?', raw: t.replace(/\n/g,'|').slice(0,80)});
   });
@@ -258,18 +296,18 @@ JS_CLICK_FIRST = r"""
     var li = list[i], t = li.innerText || '';
     if (/已完成/.test(t)) continue;
     var card = li.querySelector('.unfinished-study__type-card');
-    var type = card ? card.textContent.trim() : '';
+    var type = card ? card.textContent.replace(/\s+/g, '') : '';
     // 只处理 课件 / 视频
     if (!/课件|视频/.test(type)) continue;
     var lines = t.split('\n').map(function(s){return s.trim();}).filter(Boolean);
     var title = '';
     for (var k = 0; k < lines.length; k++) {
-      if (lines[k] === type) continue;
-      if (/^\d+\s*\/\s*\d+\s*[页]?$/.test(lines[k])) continue;
-      if (/截止/.test(lines[k])) continue;
-      if (/计分|未开始|未完成|进行中|已完成/.test(lines[k])) continue;
-      title = lines[k];
-      break;
+      var L = lines[k];
+      if (L === type) continue;
+      if (/^\d+\s*\/\s*\d+\s*[页]?$/.test(L)) continue;
+      if (/截止/.test(L)) continue;
+      if (/^(计分|未开始|未完成|进行中|已完成|视频|课件|图文|作业|讨论)$/.test(L)) continue;
+      if (L.length > title.length) title = L;
     }
     // 题目类需要人工作答，跳过
     if (/主观题|客观题|单选题|多选题|判断题|选择题|简答题|论述题|填空题|计算题|证明题|问答题|不定项/.test(title)) continue;
