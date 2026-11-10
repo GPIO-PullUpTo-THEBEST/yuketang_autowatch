@@ -489,7 +489,17 @@ $script:timer.Add_Tick({
         $script:stage = 'idle'
         $script:timer.Stop()
 
-        if ($finishedStage -eq 'pipinstall') {
+        if ($finishedStage -eq 'pyinstall') {
+            Write-LogLine ''
+            if ($exitCode -eq 0 -or $exitCode -eq $null) {
+                Write-LogLine '[OK] Python 安装流程结束，重新检测…' ([System.Drawing.Color]::FromArgb(63, 185, 80))
+            } else {
+                Write-LogLine "[!] 安装返回 $exitCode，仍重新检测一次…" ([System.Drawing.Color]::FromArgb(230, 237, 243))
+            }
+            Refresh-Env
+            Start-Sleep -Milliseconds 800
+            Do-Check -KeepLog
+        } elseif ($finishedStage -eq 'pipinstall') {
             if ($exitCode -eq 0 -or $exitCode -eq $null) {
                 Write-LogLine '[OK] 依赖安装完成' ([System.Drawing.Color]::FromArgb(63, 185, 80))
             } else {
@@ -508,6 +518,85 @@ $script:timer.Add_Tick({
     }
 })
 
+function Refresh-Env {
+    try {
+        $m = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine')
+        $u = [System.Environment]::GetEnvironmentVariable('PATH', 'User')
+        if ($m -or $u) { $env:PATH = "$m;$u" }
+    } catch {}
+}
+
+function Start-InstallPython {
+    [System.IO.File]::WriteAllText($script:logFile, '')
+    [System.IO.File]::WriteAllText($script:errFile, '')
+    $script:readPos = 0
+    $script:lastErr = ''
+
+    $wg = $null
+    try { $wg = Get-Command winget -ErrorAction SilentlyContinue } catch {}
+
+    if ($wg -and $wg.Source) {
+        Write-LogLine '正在用 winget 自动安装 Python 3.13（约 1-2 分钟，请稍候）…' ([System.Drawing.Color]::FromArgb(230, 237, 243))
+        try {
+            $script:proc = Start-Process -FilePath $wg.Source `
+                -ArgumentList 'install', 'Python.Python.3.13', '-e', '--silent', '--accept-package-agreements', '--accept-source-agreements', '--disable-interactivity' `
+                -WorkingDirectory $ScriptDir `
+                -RedirectStandardOutput $script:logFile `
+                -RedirectStandardError $script:errFile `
+                -NoNewWindow -PassThru
+            $script:stage = 'pyinstall'
+            $script:timer.Start()
+            Set-Status '正在自动安装 Python…' ([System.Drawing.Color]::FromArgb(230, 237, 243))
+            return
+        } catch {
+            Write-LogLine "[!] winget 启动失败：$($_.Exception.Message)" ([System.Drawing.Color]::FromArgb(248, 81, 73))
+            Write-LogLine '改用官方安装包…' ([System.Drawing.Color]::FromArgb(230, 237, 243))
+        }
+    } else {
+        Write-LogLine '这台电脑没有 winget，改用官方安装包…' ([System.Drawing.Color]::FromArgb(230, 237, 243))
+    }
+
+    $helper = Join-Path $ScriptDir '.ui-install-python.ps1'
+    $code = @'
+$ErrorActionPreference = 'Continue'
+$url = 'https://www.python.org/ftp/python/3.15.2/python-3.15.2-amd64.exe'
+$exe = Join-Path $env:TEMP 'python-3.15.2-amd64.exe'
+Write-Output '[1/2] 下载官方安装包（约 36 MB）…'
+try {
+    Invoke-WebRequest -Uri $url -OutFile $exe -UseBasicParsing -TimeoutSec 900
+    Write-Output ('[OK] 已下载 ' + [math]::Round((Get-Item $exe).Length / 1MB, 1) + ' MB')
+} catch {
+    Write-Output ('[X] 下载失败：' + $_.Exception.Message)
+    exit 1
+}
+Write-Output '[2/2] 静默安装（自动加入 PATH）…'
+try {
+    $p = Start-Process -FilePath $exe -ArgumentList '/quiet', 'InstallAllUsers=0', 'PrependPath=1', 'Include_test=0', 'Include_pip=1', 'Include_launcher=1' -Wait -PassThru
+    Write-Output ('[OK] 安装完成，退出码 ' + $p.ExitCode)
+} catch {
+    Write-Output ('[X] 安装失败：' + $_.Exception.Message)
+    exit 1
+}
+'@
+    try {
+        [System.IO.File]::WriteAllText($helper, $code, (New-Object System.Text.UTF8Encoding($true)))
+        $script:proc = Start-Process -FilePath 'powershell.exe' `
+            -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$helper`"" `
+            -WorkingDirectory $ScriptDir `
+            -RedirectStandardOutput $script:logFile `
+            -RedirectStandardError $script:errFile `
+            -NoNewWindow -PassThru
+        $script:stage = 'pyinstall'
+        $script:timer.Start()
+        Set-Status '正在下载并安装 Python…' ([System.Drawing.Color]::FromArgb(230, 237, 243))
+    } catch {
+        Write-LogLine "[X] 自动安装启动失败：$($_.Exception.Message)" ([System.Drawing.Color]::FromArgb(248, 81, 73))
+        Write-LogLine '请手动安装：https://www.python.org/downloads/' ([System.Drawing.Color]::FromArgb(230, 237, 243))
+        try { Start-Process 'https://www.python.org/downloads/' } catch {}
+        Set-Status 'Python 需要手动安装' ([System.Drawing.Color]::FromArgb(248, 81, 73))
+    }
+}
+
 # ---------- 三个任务 ----------
 function Do-Check {
     param([switch]$KeepLog)
@@ -522,15 +611,9 @@ function Do-Check {
 
     $script:py = Find-Python
     if (-not $script:py) {
-        Write-LogLine '[X] 这台电脑没有检测到 Python' ([System.Drawing.Color]::FromArgb(248, 81, 73))
-        Write-LogLine ''
-        Write-LogLine '请先安装 Python 3.8 或更新版本：' ([System.Drawing.Color]::FromArgb(230, 237, 243))
-        Write-LogLine '  https://www.python.org/downloads/' ([System.Drawing.Color]::FromArgb(88, 166, 255))
-        Write-LogLine ''
-        Write-LogLine '安装时务必勾选第一屏底部的 "Add python.exe to PATH"' ([System.Drawing.Color]::FromArgb(230, 237, 243))
-        Write-LogLine '装好后再点一次「检查环境，安装依赖」' ([System.Drawing.Color]::FromArgb(139, 148, 158))
-        Set-Status '找不到 Python，请先安装' ([System.Drawing.Color]::FromArgb(248, 81, 73))
-        try { Start-Process 'https://www.python.org/downloads/' } catch {}
+        Write-LogLine '[!] 没有检测到 Python，开始自动安装' ([System.Drawing.Color]::FromArgb(230, 237, 243))
+        Write-LogLine '    （安装期间请不要关闭这个窗口）' ([System.Drawing.Color]::FromArgb(139, 148, 158))
+        Start-InstallPython
         return
     }
     Write-LogLine "[OK] Python: $($script:py)" ([System.Drawing.Color]::FromArgb(63, 185, 80))
