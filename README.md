@@ -90,20 +90,18 @@ Chrome 会节流最小化窗口里的定时器和渲染，视频会卡住不往�
 
 ## 第一次使用需要 Python
 
-窗口会自己检查，如果没装，会显示：
+窗口会自己检查，如果没装，会显示提示。
+
+**不会装的话看这个教程：[Python安装教程.md](Python安装教程.md)**
+
+一句话版本（Win+R → cmd → 粘贴，连按三次 y）：
 
 ```
-[X] 这台电脑没有检测到 Python
-
-请先安装 Python 3.8 或更新版本：
-  https://www.python.org/downloads/
-
-安装时务必勾选第一屏底部的 "Add python.exe to PATH"
-装好后再点一次「检查环境，安装依赖」
+winget install Python.Python.3.13 -e
 ```
 
 > 注意：Windows 自带一个"应用商店版 python 占位符"，本工具已经识别并跳过它，
-> 不会被这个假 python 误导。请老老实实装一次真正的 Python。
+> 不会被这个假 python 误导。
 
 ---
 
