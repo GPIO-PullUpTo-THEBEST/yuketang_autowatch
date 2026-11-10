@@ -481,19 +481,44 @@ $script:timer.Add_Tick({
 
     # 进程结束
     if ($script:proc -ne $null -and $script:proc.HasExited) {
-        Write-LogLine "[进程已结束，退出码 $($script:proc.ExitCode)]" ([System.Drawing.Color]::FromArgb(63, 185, 80))
-        Set-Status '任务已结束' ([System.Drawing.Color]::FromArgb(139, 148, 158))
+        try { $script:proc.WaitForExit() } catch {}
+        $exitCode = $null
+        try { $exitCode = $script:proc.ExitCode } catch {}
+        $finishedStage = $script:stage
         $script:proc = $null
         $script:stage = 'idle'
         $script:timer.Stop()
+
+        if ($finishedStage -eq 'pipinstall') {
+            if ($exitCode -eq 0 -or $exitCode -eq $null) {
+                Write-LogLine '[OK] 依赖安装完成' ([System.Drawing.Color]::FromArgb(63, 185, 80))
+            } else {
+                Write-LogLine "[!] 依赖安装返回 $exitCode，稍后检查结果" ([System.Drawing.Color]::FromArgb(230, 237, 243))
+            }
+            Start-Sleep -Milliseconds 400
+            Do-Check -KeepLog
+        } else {
+            if ($exitCode -eq $null) {
+                Write-LogLine '[进程已结束]' ([System.Drawing.Color]::FromArgb(63, 185, 80))
+            } else {
+                Write-LogLine "[进程已结束，退出码 $exitCode]" ([System.Drawing.Color]::FromArgb(63, 185, 80))
+            }
+            Set-Status '任务已结束' ([System.Drawing.Color]::FromArgb(139, 148, 158))
+        }
     }
 })
 
 # ---------- 三个任务 ----------
 function Do-Check {
-    $script:logBox.Clear()
+    param([switch]$KeepLog)
+    if (-not $KeepLog) { $script:logBox.Clear() }
     $script:stage = 'idle'
-    Write-LogLine '=== 检查环境 ===' ([System.Drawing.Color]::FromArgb(88, 166, 255))
+    if ($KeepLog) {
+        Write-LogLine '' 
+        Write-LogLine '=== 重新检查 ===' ([System.Drawing.Color]::FromArgb(88, 166, 255))
+    } else {
+        Write-LogLine '=== 检查环境 ===' ([System.Drawing.Color]::FromArgb(88, 166, 255))
+    }
 
     $script:py = Find-Python
     if (-not $script:py) {
@@ -545,6 +570,7 @@ function Do-Check {
             -RedirectStandardOutput $script:logFile `
             -RedirectStandardError $script:errFile `
             -NoNewWindow -PassThru
+        $script:stage = 'pipinstall'
         $script:timer.Start()
         Set-Status '正在安装依赖…' ([System.Drawing.Color]::FromArgb(230, 237, 243))
         return
