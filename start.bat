@@ -42,15 +42,44 @@ if errorlevel 1 (
     %PY% -m pip install -r requirements.txt
 )
 
+echo.
+echo Locating Chrome...
 set "CHROME="
-if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
+
+for /f "tokens=2,*" %%A in ('reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe" /ve 2^>nul ^| findstr /i "REG_SZ"') do set "CHROME=%%B"
+if not defined CHROME for /f "tokens=2,*" %%A in ('reg query "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe" /ve 2^>nul ^| findstr /i "REG_SZ"') do set "CHROME=%%B"
+if not defined CHROME for /f "tokens=2,*" %%A in ('reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe" /ve 2^>nul ^| findstr /i "REG_SZ"') do set "CHROME=%%B"
+
+if defined CHROME set "CHROME=%CHROME:"=%"
+if defined CHROME if not exist "%CHROME%" set "CHROME="
+
+if not defined CHROME if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
 if not defined CHROME if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
 if not defined CHROME if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
+if not defined CHROME if exist "%LocalAppData%\Google\Chrome Beta\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome Beta\Application\chrome.exe"
+if not defined CHROME if exist "%LocalAppData%\Google\Chrome Dev\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome Dev\Application\chrome.exe"
+if not defined CHROME if exist "%LocalAppData%\Google\Chrome SxS\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome SxS\Application\chrome.exe"
+if not defined CHROME if exist "%ProgramFiles%\Google\Chrome Beta\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome Beta\Application\chrome.exe"
+if not defined CHROME if exist "%ProgramFiles%\Google\Chrome Dev\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome Dev\Application\chrome.exe"
+if not defined CHROME if exist "D:\Program Files\Google\Chrome\Application\chrome.exe" set "CHROME=D:\Program Files\Google\Chrome\Application\chrome.exe"
+if not defined CHROME if exist "D:\Google\Chrome\Application\chrome.exe" set "CHROME=D:\Google\Chrome\Application\chrome.exe"
+if not defined CHROME if exist "E:\Program Files\Google\Chrome\Application\chrome.exe" set "CHROME=E:\Program Files\Google\Chrome\Application\chrome.exe"
+
 if not defined CHROME (
-    echo [ERROR] chrome.exe not found.
+    echo [ERROR] Chrome not found.
+    echo.
+    echo This tool requires Google Chrome. Install it first:
+    echo   https://www.google.com/chrome/
+    echo.
+    echo If Chrome is already installed in a custom folder,
+    echo open start.bat with Notepad and add one line like:
+    echo   if not defined CHROME if exist "X:\Your\Path\chrome.exe" set "CHROME=X:\Your\Path\chrome.exe"
+    echo.
     pause
+    start "" "https://www.google.com/chrome/"
     exit /b 1
 )
+echo Chrome: %CHROME%
 
 set "PROFILE=%USERPROFILE%\ykt-chrome-profile"
 
@@ -73,6 +102,13 @@ timeout /t 10 /nobreak >nul
 powershell -NoProfile -Command "try{(Invoke-WebRequest 'http://127.0.0.1:9222/json/version' -UseBasicParsing -TimeoutSec 5)|Out-Null;exit 0}catch{exit 1}" >nul 2>&1
 if not %errorlevel%==0 (
     echo [ERROR] Debug port 9222 not ready
+    echo.
+    echo Try these:
+    echo   1. Close ALL Chrome windows manually, then run start.bat again
+    echo   2. Make sure Chrome version is 100 or newer
+    echo   3. Delete this folder and run start.bat again:
+    echo      %PROFILE%
+    echo.
     pause
     exit /b 1
 )
