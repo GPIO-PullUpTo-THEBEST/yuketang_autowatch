@@ -1,6 +1,10 @@
 # 运行产物
 progress.json
 progress_all.json
+.acknowledged
+.ui-run.log
+.ui-run.err.log
+.ui-run.stdin
 *.log
 
 # Python
