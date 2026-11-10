@@ -2,7 +2,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $AckFile   = Join-Path $ScriptDir '.acknowledged'
@@ -329,18 +329,56 @@ function Test-Port($p) {
     } catch { return $false }
 }
 
+function Test-PythonExe($exe) {
+    if (-not $exe) { return $false }
+    # Windows 应用商店占位符，不是真正的 Python
+    if ($exe -like '*\WindowsApps\*') { return $false }
+    if (-not (Test-Path $exe)) { return $false }
+    try {
+        $o = & $exe --version 2>&1
+        if ($LASTEXITCODE -eq 0 -and ("$o" -match 'Python\s+3')) { return $true }
+    } catch {}
+    return $false
+}
+
 function Find-Python {
-    $c = Get-Command python -ErrorAction SilentlyContinue
-    if ($c) { return $c.Source }
-    $c = Get-Command py -ErrorAction SilentlyContinue
-    if ($c) { return $c.Source }
-    foreach ($p in @(
-        'E:\Python313\python.exe',
-        "$env:LOCALAPPDATA\Programs\Python\Python39\python.exe",
-        'C:\Python311\python.exe',
-        'C:\Python312\python.exe'
+    $cands = New-Object System.Collections.ArrayList
+
+    foreach ($cmd in @('python', 'py')) {
+        try {
+            $c = Get-Command $cmd -ErrorAction SilentlyContinue
+            if ($c -and $c.Source) { [void]$cands.Add($c.Source) }
+        } catch {}
+    }
+
+    foreach ($root in @(
+        'HKLM:\SOFTWARE\Python\PythonCore',
+        'HKCU:\SOFTWARE\Python\PythonCore',
+        'HKLM:\SOFTWARE\WOW6432Node\Python\PythonCore'
     )) {
-        if (Test-Path $p) { return $p }
+        try {
+            Get-ChildItem $root -ErrorAction SilentlyContinue | ForEach-Object {
+                $ip = Join-Path $_.PSPath 'InstallPath'
+                try {
+                    $v = (Get-ItemProperty -Path $ip -ErrorAction Stop).'(default)'
+                    if ($v) { [void]$cands.Add((Join-Path $v.Trim('"') 'python.exe')) }
+                } catch {}
+            }
+        } catch {}
+    }
+
+    foreach ($ver in @('314', '313', '312', '311', '310', '39', '38')) {
+        [void]$cands.Add("$env:LOCALAPPDATA\Programs\Python\Python$ver\python.exe")
+        [void]$cands.Add("C:\Python$ver\python.exe")
+        [void]$cands.Add("D:\Python$ver\python.exe")
+        [void]$cands.Add("E:\Python$ver\python.exe")
+        [void]$cands.Add("C:\Program Files\Python$ver\python.exe")
+    }
+    [void]$cands.Add("$env:LOCALAPPDATA\Programs\Python\Launcher\py.exe")
+    [void]$cands.Add('C:\Windows\py.exe')
+
+    foreach ($c in $cands) {
+        if (Test-PythonExe $c) { return $c }
     }
     return $null
 }
@@ -459,8 +497,15 @@ function Do-Check {
 
     $script:py = Find-Python
     if (-not $script:py) {
-        Write-LogLine '[X] 没找到 Python，请先安装：https://www.python.org/downloads/' ([System.Drawing.Color]::FromArgb(248, 81, 73))
-        Set-Status 'Python 未安装' ([System.Drawing.Color]::FromArgb(248, 81, 73))
+        Write-LogLine '[X] 这台电脑没有检测到 Python' ([System.Drawing.Color]::FromArgb(248, 81, 73))
+        Write-LogLine ''
+        Write-LogLine '请先安装 Python 3.8 或更新版本：' ([System.Drawing.Color]::FromArgb(230, 237, 243))
+        Write-LogLine '  https://www.python.org/downloads/' ([System.Drawing.Color]::FromArgb(88, 166, 255))
+        Write-LogLine ''
+        Write-LogLine '安装时务必勾选第一屏底部的 "Add python.exe to PATH"' ([System.Drawing.Color]::FromArgb(230, 237, 243))
+        Write-LogLine '装好后再点一次「检查环境，安装依赖」' ([System.Drawing.Color]::FromArgb(139, 148, 158))
+        Set-Status '找不到 Python，请先安装' ([System.Drawing.Color]::FromArgb(248, 81, 73))
+        try { Start-Process 'https://www.python.org/downloads/' } catch {}
         return
     }
     Write-LogLine "[OK] Python: $($script:py)" ([System.Drawing.Color]::FromArgb(63, 185, 80))
@@ -469,15 +514,26 @@ function Do-Check {
     if (-not $script:chrome) {
         Write-LogLine '[X] 没找到 Chrome，请先安装：https://www.google.com/chrome/' ([System.Drawing.Color]::FromArgb(248, 81, 73))
         Set-Status 'Chrome 未安装' ([System.Drawing.Color]::FromArgb(248, 81, 73))
+        try { Start-Process 'https://www.google.com/chrome/' } catch {}
         return
     }
     Write-LogLine "[OK] Chrome: $($script:chrome)" ([System.Drawing.Color]::FromArgb(63, 185, 80))
 
-    $ver = & $script:py --version 2>&1
-    Write-LogLine "[OK] $ver" ([System.Drawing.Color]::FromArgb(63, 185, 80))
+    try {
+        $ver = & $script:py --version 2>&1
+        Write-LogLine "[OK] $ver" ([System.Drawing.Color]::FromArgb(63, 185, 80))
+    } catch {
+        Write-LogLine "[X] Python 无法运行：$($_.Exception.Message)" ([System.Drawing.Color]::FromArgb(248, 81, 73))
+        Set-Status 'Python 无法运行' ([System.Drawing.Color]::FromArgb(248, 81, 73))
+        return
+    }
 
-    $hasWs = & $script:py -c "import websockets" 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    $wsOk = $false
+    try {
+        & $script:py -c "import websockets" 2>&1 | Out-Null
+        $wsOk = ($LASTEXITCODE -eq 0)
+    } catch { $wsOk = $false }
+    if (-not $wsOk) {
         Write-LogLine '缺少 websockets，正在安装依赖…' ([System.Drawing.Color]::FromArgb(230, 237, 243))
         [System.IO.File]::WriteAllText($script:logFile, '')
         [System.IO.File]::WriteAllText($script:errFile, '')

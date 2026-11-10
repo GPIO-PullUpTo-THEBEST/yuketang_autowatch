@@ -17,8 +17,8 @@ echo ==========================================
 echo.
 
 set "PY="
-for /f "delims=" %%i in ('where python 2^>nul') do if not defined PY set "PY=%%i"
-if not defined PY for /f "delims=" %%i in ('where py 2^>nul') do if not defined PY set "PY=%%i -3"
+for /f "delims=" %%i in ('where python 2^>nul ^| findstr /i /v "WindowsApps"') do if not defined PY set "PY=%%i"
+if not defined PY for /f "delims=" %%i in ('where py 2^>nul ^| findstr /i /v "WindowsApps"') do if not defined PY set "PY=%%i -3"
 if not defined PY if exist "E:\Python313\python.exe" set "PY=E:\Python313\python.exe"
 if not defined PY if exist "%LocalAppData%\Programs\Python\Python39\python.exe" set "PY=%LocalAppData%\Programs\Python\Python39\python.exe"
 if not defined PY (

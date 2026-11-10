@@ -1,8 +1,10 @@
-# 雨课堂自动刷课
+# 雨课堂自动观看
 
 自动完成雨课堂的**视频**、**PPT 课件**、**PPT 内嵌视频**，2 倍速播放，跨课程自动切换，断点续刷。
 
-作业、图文、讨论、各类题目会被自动跳过（需要你自己做）。
+作业、图文、讨论、各类题目会自动跳过，需要你自己做。
+
+> ⚠️ **仅支持 Chrome 浏览器**。不调用 Edge，也不支持其他浏览器。
 
 ---
 
@@ -10,17 +12,70 @@
 
 **https://github.com/GPIO-PullUpTo-THEBEST/yuketang_autowatch/archive/refs/heads/main.zip**
 
-点开就自动下载，解压到任意目录（**路径不要有空格**）。
+解压到任意目录（**路径不要有空格**）。
 
 ---
 
-## ⚠️ 三条铁律（不遵守会失败）
+## 使用方法
 
-### 1. 调试用的 Chrome 窗口**不能关闭**
+**双击 `启动器.bat`**，打开窗口后跟着三步走就行。
 
-脚本靠这个窗口工作。关掉 = 脚本停摆。
+```
+┌──────────────────────────────────────────────┐
+│  雨课堂自动观看   版本 Ver 1.0.4        —  ×  │
+├──────────────────────────────────────────────┤
+│  第一步 点击这个                            01 │
+│  检查环境，安装依赖                            │
+│  安装 Python 依赖并检查 Chrome                 │
+│                                              │
+│  第二步 点击这个                            02 │
+│  开始刷课                                     │
+│  启动 Chrome 调试窗口，登录后自动开始            │
+│                                              │
+│  如需停止，点击这个                          03 │
+│  停止并保存记录                                │
+│  停掉后台脚本，进度保存在 progress.json         │
+├──────────────────────────────────────────────┤
+│ ┃ 运行日志（实时显示，不会弹出黑色命令行）       │
+└──────────────────────────────────────────────┘
+```
 
-### 2. 调试用的 Chrome 窗口**不能最小化**
+### 第一步：检查环境，安装依赖
+
+点窗口里的「检查环境，安装依赖」，它会自动：
+
+- 找 Python（没装会在窗口里提示你，并打开下载页）
+- 找 Chrome（查注册表 + 常见路径，装在哪个盘都能找到）
+- 安装依赖（缺少 `websockets` 时自动 `pip install`）
+
+日志里显示全是 `[OK]` 就说明环境没问题。
+
+### 第二步：开始刷课
+
+点「开始刷课」，它会自动：
+
+- 关掉现有 Chrome 窗口
+- 弹出调试用的 Chrome
+- 等调试端口就绪
+- 启动刷课脚本，日志实时显示在窗口里
+
+**Chrome 弹出后，如果没登录，请先扫码登录雨课堂**，脚本会自动接管。
+
+### 第三步：想停就点这个
+
+点「停止并保存记录」，会立刻停掉后台脚本，进度保存到 `progress.json`。
+
+下次再点第二步就接着刷，不会重复。
+
+---
+
+## ⚠️ 三条铁律
+
+### 1. 调试用的 Chrome 窗口不能关闭
+
+脚本靠这个窗口工作。关掉就等于停摆。
+
+### 2. 调试用的 Chrome 窗口不能最小化
 
 Chrome 会节流最小化窗口里的定时器和渲染，视频会卡住不往前走。
 
@@ -33,109 +88,53 @@ Chrome 会节流最小化窗口里的定时器和渲染，视频会卡住不往�
 
 ---
 
-## 三个按钮
+## 第一次使用需要 Python
 
-解压后目录里只有三个 `.bat`，按顺序用：
-
-| 文件 | 什么时候用 |
-|---|---|
-| **`install.bat`** | **第一次**用，双击它 |
-| **`start.bat`** | 以后每次开始刷课，双击它 |
-| **`stop.bat`** | 想停下来，双击它 |
-
----
-
-## 第一次使用
-
-### 第 1 步：双击 `install.bat`
-
-它会：
-1. 找 Python（找不到会提示你去装）
-2. 自动装依赖
-3. 检查 Chrome
-4. 启动 `start.bat`
-
-> 需要 Python 3.8+。没装的话去 https://www.python.org/downloads/ 下载，
-> **安装第一屏底部务必勾选 `Add python.exe to PATH`**。
-
-### 第 2 步：Chrome 自动弹出后，登录雨课堂
-
-`start.bat` 会自动：
-1. 关掉你所有 Chrome 窗口
-2. 用调试模式启动一个新 Chrome
-3. 等你登录
-
-在新 Chrome 里打开 https://www.yuketang.cn，扫码登录（只需第一次）。
-
-登录好了回到黑色窗口，按任意键继续。
-
-### 第 3 步：等它自己刷
-
-黑色窗口滚动这样的日志就是在跑：
+窗口会自己检查，如果没装，会显示：
 
 ```
-[23:36:50]   未完成 87 项: 图文35, 视频计分39, 讨论1, 作业12
-[23:36:50]   下一个: [视频计分] 1.2.3毛泽东思想的主要内容
-[23:36:52]   视频 839s
-[23:36:52]   倍速: HOOKED rate=2
-[23:37:12]   544/839s  rate=2
-[23:37:52]   ★ 播完 (839s)
+[X] 这台电脑没有检测到 Python
+
+请先安装 Python 3.8 或更新版本：
+  https://www.python.org/downloads/
+
+安装时务必勾选第一屏底部的 "Add python.exe to PATH"
+装好后再点一次「检查环境，安装依赖」
 ```
 
-**这时候你可以去干别的，但别关也别最小化那个 Chrome。**
-
----
-
-## 以后每次使用
-
-```
-双击 start.bat  →  等它跑
-想停双击 stop.bat
-```
-
-不用再做 `install.bat`。
-
----
-
-## 想停下来
-
-双击 **`stop.bat`**，或者直接关掉黑色窗口。
-
-进度会自动存在 `progress.json`，下次 `start.bat` 接着刷，不会重复。
+> 注意：Windows 自带一个"应用商店版 python 占位符"，本工具已经识别并跳过它，
+> 不会被这个假 python 误导。请老老实实装一次真正的 Python。
 
 ---
 
 ## 常见问题
 
-### 双击后闪一下就没了
+### 双击启动器没反应 / 闪一下就没了
 
-Python 没装或没加到 PATH。去 https://www.python.org/downloads/ 重装，勾 `Add python.exe to PATH`。
+Python 没装。去 https://www.python.org/downloads/ 装，勾 `Add python.exe to PATH`。
 
-装好后双击 `install.bat` 再试一次。
+### 提示「没找到 Chrome」
 
-### 提示 `[ERROR] chrome.exe not found`
+本工具**仅支持 Chrome**。如果是便携版或装在非常规目录，用记事本打开 `启动器.ps1`，
+在 `Find-Chrome` 函数里把你自己的路径加到列表里。
 
-Chrome 装在非常规位置。用记事本打开 `start.bat`，把 `set "CHROME=..."` 那几行改成你电脑上 Chrome 的实际路径。
+### 点第二步窗口卡住一两秒
 
-### Chrome 窗口被我不小心最小化了
+正常。那是在同步关掉旧 Chrome 并启动调试实例，之后日志就会滚动起来。
 
-最大化回去（**不要只是恢复，要点最大化按钮**），脚本会在几秒内自动恢复播放。日志里会看到它重新 `play()`。
+### 一直显示「等待调试端口就绪」
 
-### Chrome 被我不小心关了
-
-双击 `stop.bat` 清掉残留进程，然后重新双击 `start.bat`。登录状态还在，不用重新扫码。
-
-### 一直显示"课程列表加载中"
-
-在 Chrome 里刷新一下雨课堂首页，确认是已登录状态。
+- 检查 Chrome 是不是被安全软件拦了
+- 手动关掉所有 Chrome，再点一次第二步
+- 还是不行，删掉 `C:\Users\你的用户名\ykt-chrome-profile` 重试
 
 ### 日志里出现「无进展」「拉黑跳过」
 
-正常。表示某项内容刷不动（通常是题目类），脚本会自动跳过它，继续下一项。
+正常。表示某项内容刷不动（通常是题目类），脚本会自动跳过，继续下一项。
 
-### 日志 10 分钟没有新内容
+### 日志不动了
 
-卡死了。双击 `stop.bat`，再双击 `start.bat`。
+点第三步「停止并保存记录」，再点第二步重新开始。
 
 ### Chrome 大版本更新后突然不能用了
 
@@ -145,15 +144,16 @@ Chrome 装在非常规位置。用记事本打开 `start.bat`，把 `set "CHROME
 C:\Users\你的用户名\ykt-chrome-profile
 ```
 
-然后重新双击 `start.bat`，重新扫码登录。
+然后重新点第二步，重新扫码登录。
 
 ### 想从头再刷一遍
 
 删掉 `progress.json`。
 
-### 只想重刷某一门课
+### 别的方式：命令行
 
-用记事本打开 `progress.json`，在 `courses_done` 数组里删掉那门课的名字。
+不想用图形窗口的话，目录里还有三个 bat 可以直接双击或在命令行运行：
+`install.bat`（首次）、`start.bat`（开始）、`stop.bat`（停止）。
 
 ---
 
@@ -180,38 +180,36 @@ C:\Users\你的用户名\ykt-chrome-profile
 
 | 文件 | 作用 |
 |---|---|
-| `install.bat` | 首次安装 |
-| `start.bat` | 开始刷课 |
-| `stop.bat` | 停止 |
+| `启动器.bat` | **双击这个**，打开图形窗口 |
+| `启动器.ps1` | 窗口程序本体 |
+| `install.bat` | 命令行方式：首次安装 |
+| `start.bat` | 命令行方式：开始刷课 |
+| `stop.bat` | 命令行方式：停止 |
 | `run_all.py` | 主程序 |
-| `progress.json` | 进度记录（**别删，删了会重头刷**） |
-| `requirements.txt` | Python 依赖清单 |
+| `progress.json` | 进度记录（别删，删了会重头刷） |
 
 ---
 
-## 技术原理（想了解才看）
+## 技术原理
 
 ### 为什么 2 倍速能生效
 
 直接改 `video.playbackRate = 2` 会被雨课堂播放器在 2 秒内重置回 1。
-
 本项目劫持这个属性的 setter，让播放器的重置失效：
 
 ```js
 var desc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'playbackRate');
 Object.defineProperty(video, 'playbackRate', {
   get: function(){ return desc.get.call(video); },
-  set: function(){ desc.set.call(video, 2); }   // 无视外部赋值
+  set: function(){ desc.set.call(video, 2); }
 });
 ```
 
-### 为什么必须用 Chrome 调试协议
+### 为什么必须用 Chrome
 
-Tampermonkey 在雨课堂的视频页和 PPT 页**注入不进去**——播放器只响应 `isTrusted=true` 的真实事件，脚本 `click()` 全被忽略。
+Tampermonkey 在雨课堂的视频页和 PPT 页**注入不进去**——播放器只响应 `isTrusted=true` 的真实事件。
 
-试过无效的方案：`element.click()`、`dispatchEvent(MouseEvent)`、`dispatchEvent(PointerEvent)`、CDP `Input.dispatchMouseEvent`。
-
-Chrome 调试协议（CDP）走浏览器原生通道，能绕过这个限制。
+只有 Chrome 的调试协议（CDP）能绕过这个限制。Edge 虽然是 Chromium 内核，但本项目未做适配，**仅支持 Chrome**。
 
 ### 关键选择器
 
