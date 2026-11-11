@@ -439,7 +439,7 @@ $script:timer.Add_Tick({
             $script:readPos = 0
             $script:lastErr = ''
             $script:proc = Start-Process -FilePath $script:py `
-                -ArgumentList '-u', 'run_all.py' `
+                -ArgumentList '-u', '核心文件/run_all.py' `
                 -WorkingDirectory $ScriptDir `
                 -RedirectStandardOutput $script:logFile `
                 -RedirectStandardError $script:errFile `
@@ -648,7 +648,7 @@ function Do-Check {
         $script:readPos = 0
         $script:lastErr = ''
         $script:proc = Start-Process -FilePath $script:py `
-            -ArgumentList '-m', 'pip', 'install', '-r', 'requirements.txt' `
+            -ArgumentList '-m', 'pip', 'install', '-r', '核心文件/requirements.txt' `
             -WorkingDirectory $ScriptDir `
             -RedirectStandardOutput $script:logFile `
             -RedirectStandardError $script:errFile `
@@ -693,7 +693,7 @@ function Do-Start {
         $script:readPos = 0
         $script:lastErr = ''
         $script:proc = Start-Process -FilePath $script:py `
-            -ArgumentList '-u', 'run_all.py' `
+            -ArgumentList '-u', '核心文件/run_all.py' `
             -WorkingDirectory $ScriptDir `
             -RedirectStandardOutput $script:logFile `
             -RedirectStandardError $script:errFile `

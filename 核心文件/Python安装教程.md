@@ -6,7 +6,7 @@
 
 ## 方式零（强烈推荐）：用仓库自带脚本，全自动
 
-**双击仓库目录里的 `PythonChrome安装状态检查（必点）.bat`**（和 `启动器.bat` 在同一级目录）。
+**双击仓库根目录里的 `PythonChrome安装状态检查（第一步，必点）.bat`**（和 `启动器（第二步，必点）.bat` 在同一级目录）。
 
 它会自动：
 
@@ -141,7 +141,7 @@ winget uninstall Python.Python.3.13
 
 ## 五、装好之后
 
-回到刷课工具窗口，点 **「第一步 检查环境，安装依赖」**，看到全是 `[OK]` 就成了：
+回到仓库根目录，双击 `启动器（第二步，必点）.bat`，点 **「第一步 检查环境，安装依赖」**，看到全是 `[OK]` 就成了：
 
 ```
 === 检查环境 ===
@@ -158,7 +158,7 @@ winget uninstall Python.Python.3.13
 ## 速查
 
 ```
-推荐         双击 PythonChrome安装状态检查（必点）.bat   （全自动）
+推荐         双击 PythonChrome安装状态检查（第一步，必点）.bat   （全自动）
 装          winget install Python.Python.3.13 -e     （连按三次 y）
 黑框         别关，等它跑完
 验证         python --version      → Python 3.13.17
