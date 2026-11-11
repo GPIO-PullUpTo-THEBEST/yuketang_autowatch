@@ -4,6 +4,22 @@
 
 ---
 
+## 方式零（强烈推荐）：用仓库自带脚本，全自动
+
+**双击仓库目录里的 `PythonChrome安装状态检查（必点）.bat`**（和 `启动器.bat` 在同一级目录）。
+
+它会自动：
+
+- 检查本机是否已装 Python（含 PATH、pip 三项检查）和 Chrome
+- 已装 → 直接提示"本机已装 Python / 本机已装 Chrome"，跳过安装
+- 没装 → 自动下载官方离线包静默安装，**自动勾好 PATH 和 pip**，装完当场验证
+
+全程不需要你敲任何命令，装完直接回到刷课工具点第一步即可。
+
+> 下面手动安装的 winget 方法，是给不想用脚本的人准备的备选方案。
+
+---
+
 ## 一、安装
 
 ### 第 1 步：打开命令行
@@ -142,6 +158,7 @@ winget uninstall Python.Python.3.13
 ## 速查
 
 ```
+推荐         双击 PythonChrome安装状态检查（必点）.bat   （全自动）
 装          winget install Python.Python.3.13 -e     （连按三次 y）
 黑框         别关，等它跑完
 验证         python --version      → Python 3.13.17

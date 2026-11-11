@@ -8,6 +8,17 @@
 
 ---
 
+## 🔒 前置依赖（必读）
+
+使用本工具前，你的电脑必须满足：
+
+1. **已安装 Chrome 浏览器**
+2. **已安装 Python，且 Python 必须装好 PATH 和 pip**（缺一项都无法运行）
+
+**极度推荐：先运行本仓库自带的检查安装脚本 `PythonChrome安装状态检查（必点）.bat`**（与本目录下的 `启动器.bat` 同级）。双击它会自动检查以上全部条件：已装好就直接告诉你跳过；缺什么就自动下载安装（Python 会自动带上 PATH 和 pip），不需要你手动配置任何东西。
+
+---
+
 ## ⬇️ 下载
 
 **https://github.com/GPIO-PullUpTo-THEBEST/yuketang_autowatch/archive/refs/heads/main.zip**
@@ -91,6 +102,8 @@ Chrome 会节流最小化窗口里的定时器和渲染，视频会卡住不往�
 ## 第一次使用需要 Python
 
 窗口会自己检查，如果没装，会显示提示。
+
+**最省事：直接双击 `PythonChrome安装状态检查（必点）.bat`**，Python 和 Chrome 一起检查，缺哪个装哪个（自动配 PATH 和 pip）。
 
 **不会装的话看这个教程：[Python安装教程.md](Python安装教程.md)**
 
@@ -180,6 +193,7 @@ C:\Users\你的用户名\ykt-chrome-profile
 |---|---|
 | `启动器.bat` | **双击这个**，打开图形窗口 |
 | `启动器.ps1` | 窗口程序本体 |
+| `PythonChrome安装状态检查（必点）.bat` | **先双击这个**：检查/安装 Chrome 与 Python（含 PATH、pip），已装则跳过 |
 | `install.bat` | 命令行方式：首次安装 |
 | `start.bat` | 命令行方式：开始刷课 |
 | `stop.bat` | 命令行方式：停止 |
