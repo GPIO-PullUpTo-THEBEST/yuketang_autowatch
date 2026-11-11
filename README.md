@@ -126,7 +126,7 @@ Python 没装。去 https://www.python.org/downloads/ 装，勾 `Add python.exe 
 
 ### 提示「没找到 Chrome」
 
-本工具**仅支持 Chrome**。如果是便携版或装在非常规目录，用记事本打开 `启动器（第二步，必点）.ps1`，
+本工具**仅支持 Chrome**。如果是便携版或装在非常规目录，用记事本打开 `启动器（不用点）.ps1`，
 在 `Find-Chrome` 函数里把你自己的路径加到列表里。
 
 ### 点第二步窗口卡住一两秒
@@ -196,7 +196,7 @@ yuketang_autowatch/
 ├── PythonChrome安装状态检查（第一步，必点）.bat   ← 先双击这个
 ├── 启动器（第二步，必点）.bat                     ← 然后双击这个
 ├── PythonChrome安装状态检查（不用点）.ps1         ← bat 的内核，不用管
-├── 启动器（第二步，必点）.ps1                     ← bat 的内核，不用管
+├── 启动器（不用点）.ps1                           ← bat 的内核，不用管
 └── 核心文件/
     ├── run_all.py          主程序
     ├── requirements.txt    依赖清单
@@ -210,7 +210,7 @@ yuketang_autowatch/
 |---|---|
 | `PythonChrome安装状态检查（第一步，必点）.bat` | **先双击这个**：检查/安装 Chrome 与 Python（含 PATH、pip），已装则跳过 |
 | `启动器（第二步，必点）.bat` | **再双击这个**，打开图形窗口 |
-| `启动器（第二步，必点）.ps1` | 窗口程序本体 |
+| `启动器（不用点）.ps1` | 窗口程序本体 |
 | `核心文件/run_all.py` | 主程序 |
 | `核心文件/install.bat` | 命令行方式：首次安装 |
 | `核心文件/start.bat` | 命令行方式：开始刷课 |
